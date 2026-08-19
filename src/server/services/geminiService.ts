@@ -50,7 +50,7 @@ Respond strictly with valid JSON conforming to this format:
       recommendedAction: parsed.recommendedAction || baseFusion.recommendedAction,
       timestamp: new Date().toISOString(),
     };
-  } catch (error) {
+  } catch {
     // Fallback gracefully on any API/network failure
     const fallback = calculateRiskFusion(input);
     return {

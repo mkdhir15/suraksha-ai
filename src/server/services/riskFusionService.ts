@@ -6,7 +6,7 @@ export function calculateRiskFusion(input: ThreatAnalysisInput): ThreatAnalysisR
   let textScore = 0;
   if (input.textSnippet) {
     const lower = input.textSnippet.toLowerCase();
-    const keywordMatches = HIGH_THREAT_KEYWORDS.filter((kw) => lower.includes(kw)).length;
+    const keywordMatches = HIGH_THREAT_KEYWORDS.filter((kw: string) => lower.includes(kw)).length;
     textScore = Math.min(100, keywordMatches * 30 + (input.textSnippet.length > 50 ? 10 : 0));
   }
 
