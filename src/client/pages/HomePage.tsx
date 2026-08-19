@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
-import { Shield, Radio, AlertOctagon } from 'lucide-react';
+import { Shield, Radio, AlertOctagon, Play, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Toast } from '../components/ui/Toast';
 import { Badge } from '../components/ui/Badge';
 import { RiskBreakdownPanel } from '../components/RiskBreakdownPanel';
 import { DeadManSwitch } from '../components/DeadManSwitch';
-import { CalculatorDisguise } from '../components/CalculatorDisguise';
 import { EscalationLadder } from '../components/EscalationLadder';
 import { useDistressFusion } from '../hooks/useDistressFusion';
+import { EscalationState, EscalationLevel } from '../../shared/types/safety.types';
+import {
+  createInitialEscalationState,
+  escalateState,
+  resetEscalationState,
+} from '../../server/services/escalationService';
 
 export const HomePage: React.FC = () => {
   const { isMonitoring, toggleMonitoring, analyzeThreat, analysisResult } = useDistressFusion();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [escalation, setEscalation] = useState<EscalationState>(createInitialEscalationState());
+  const [isDemoRunning, setIsDemoRunning] = useState(false);
+
+  const handleEscalate = (targetLevel: EscalationLevel, reason: string) => {
+    setEscalation((prev) => escalateState(prev, targetLevel, reason));
+  };
+
+  const handleResetEscalation = () => {
+    setEscalation(resetEscalationState());
+  };
 
   const handleSimulateThreat = async () => {
     const result = await analyzeThreat({
@@ -19,11 +34,53 @@ export const HomePage: React.FC = () => {
       audioFeatures: { decibels: 88, pitchHz: 340, stressProbability: 0.92 },
       motionFeatures: { accelerationMagnitude: 2.8, isRapidMovement: true, freefallDetected: false },
     });
-    setToastMessage(`Threat Analyzed: ${result.riskLevel} (${result.riskScore}/100)`);
+    setToastMessage(`Threat Analyzed: ${result.riskLevel} (${result.riskScore}/100) — Modality Weights Updated`);
+  };
+
+  const handleDeadManExpire = () => {
+    handleEscalate(3, "Dead-Man's Switch expired without PIN renewal");
+    setToastMessage('CRITICAL: DEAD-MAN SWITCH EXPIRED -> LEVEL 3 EMERGENCY SOS DISPATCHED');
   };
 
   const handleTriggerSos = () => {
+    handleEscalate(3, 'Silent emergency SOS dispatched manually');
     setToastMessage('CRITICAL: SILENT EMERGENCY SOS DISPATCHED TO GUARDIANS');
+  };
+
+  // Single-Click "Guided Live Demo Flow"
+  const handleRunGuidedDemo = async () => {
+    if (isDemoRunning) return;
+    setIsDemoRunning(true);
+
+    if (!isMonitoring) {
+      toggleMonitoring();
+    }
+
+    // Step 1 (0s): Simulate Threat Signal & Risk Fusion Weight Analysis
+    setToastMessage('Guided Demo (Step 1/3): Analyzing Multi-Modal Threat Signals...');
+    await analyzeThreat({
+      textSnippet: 'Urgent: Unidentified person following close behind',
+      audioFeatures: { decibels: 89, pitchHz: 360, stressProbability: 0.94 },
+      motionFeatures: { accelerationMagnitude: 2.9, isRapidMovement: true, freefallDetected: false },
+    });
+
+    // Step 2 (1.4s): Escalation Ladder Level 1 -> Level 2
+    setTimeout(() => {
+      handleEscalate(1, 'Guided Demo: Level 1 Warning Signal Detected');
+      setToastMessage('Guided Demo (Step 2/3): Escalating to Level 1 Warning...');
+    }, 1400);
+
+    setTimeout(() => {
+      handleEscalate(2, 'Guided Demo: Level 2 Silent Contact Beacon Active');
+      setToastMessage('Guided Demo (Step 2/3): Escalation Ladder Level 2 Silent Beacon Active');
+    }, 2600);
+
+    // Step 3 (4.0s): Dead-Man Switch Expiry -> Level 3 Active
+    setTimeout(() => {
+      handleEscalate(3, 'Guided Demo: Dead-Man Switch Expiration Event');
+      setToastMessage('Guided Demo (Step 3/3): Dead-Man Expiration -> Level 3 Emergency SOS Dispatched!');
+      setIsDemoRunning(false);
+    }, 4000);
   };
 
   return (
@@ -48,12 +105,12 @@ export const HomePage: React.FC = () => {
             <p className="text-xs text-muted mt-1 leading-relaxed">
               {isMonitoring
                 ? 'Active multi-modal monitoring: Acoustic decibels, motion acceleration, & contextual telemetry fused.'
-                : 'Guardian engine in standby mode. Click Start Guardian to begin background telemetry.'}
+                : 'Guardian engine in standby mode. Click Start Guardian or Run Guided Live Demo.'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             variant={isMonitoring ? 'primary' : 'outline'}
             onClick={toggleMonitoring}
@@ -62,24 +119,44 @@ export const HomePage: React.FC = () => {
             <Radio className={`w-4 h-4 ${isMonitoring ? 'animate-pulse text-white' : ''}`} />
             {isMonitoring ? 'Guardian Active' : 'Start Guardian'}
           </Button>
+
           <Button variant="critical" onClick={handleSimulateThreat}>
             <AlertOctagon className="w-4 h-4 mr-1.5" /> Simulate Threat Signal
+          </Button>
+
+          <Button
+            variant="secondary"
+            onClick={handleRunGuidedDemo}
+            disabled={isDemoRunning}
+            className="border border-accent/40 text-accent font-bold"
+          >
+            {isDemoRunning ? (
+              <Sparkles className="w-4 h-4 mr-1.5 animate-spin text-accent" />
+            ) : (
+              <Play className="w-4 h-4 mr-1.5 text-accent" />
+            )}
+            {isDemoRunning ? 'Executing Live Demo...' : 'Run Guided Live Demo'}
           </Button>
         </div>
       </div>
 
-      {/* Main Grid */}
+      {/* Main Grid: Explainable Risk Breakdown, Escalation Ladder, & Dead-Man Switch */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column: Risk Breakdown & Escalation Ladder */}
+        {/* Left Column: Risk Breakdown Panel */}
         <div className="flex flex-col gap-8">
           <RiskBreakdownPanel analysis={analysisResult} />
-          <EscalationLadder onLevel3Triggered={handleTriggerSos} />
         </div>
 
-        {/* Right Column: Dead-Man Switch & Covert Calculator */}
+        {/* Right Column: Escalation Ladder & Dead-Man Switch */}
         <div className="flex flex-col gap-8">
-          <DeadManSwitch onSosTriggered={handleTriggerSos} />
-          <CalculatorDisguise onTriggerSos={handleTriggerSos} />
+          <EscalationLadder
+            onLevel3Triggered={handleTriggerSos}
+            escalationState={escalation}
+            onEscalate={handleEscalate}
+            onReset={handleResetEscalation}
+          />
+
+          <DeadManSwitch onSosTriggered={handleDeadManExpire} />
         </div>
       </div>
 

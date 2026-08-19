@@ -4,6 +4,7 @@ import { simulateDeepfakeVerification } from '../src/server/services/deepfakeVer
 import { deterministicCrisisFallback } from '../src/server/services/crisisClassifierService';
 import { createEvidenceRecord, verifyEvidenceIntegrity } from '../src/server/services/evidenceLedgerService';
 import { getFairnessMetrics } from '../src/server/services/fairnessMetricsService';
+import { CALLER_IDENTITIES_CONFIG } from '../src/shared/constants/fakeCall.constants';
 
 describe('SurakshaAI Trust Center Services Unit Tests', () => {
   // 1. Stalkerware Scan
@@ -58,5 +59,22 @@ describe('SurakshaAI Trust Center Services Unit Tests', () => {
     expect(highSensitivity.demographicParity[0].falsePositiveRate).toBeGreaterThan(
       standard.demographicParity[0].falsePositiveRate
     );
+  });
+
+  // 6. Fake Call Simulator Deterrent Identities
+  it('CALLER_IDENTITIES_CONFIG includes 5 verified caller options with voice deterrent dialogues', () => {
+    expect(CALLER_IDENTITIES_CONFIG.length).toBe(5);
+
+    const sibling = CALLER_IDENTITIES_CONFIG.find((c) => c.id === 'sibling');
+    expect(sibling).toBeDefined();
+    expect(sibling?.name).toBe('Brother / Sis');
+
+    const security = CALLER_IDENTITIES_CONFIG.find((c) => c.id === 'security');
+    expect(security).toBeDefined();
+    expect(security?.name).toBe('Nearby Security Center');
+
+    const police = CALLER_IDENTITIES_CONFIG.find((c) => c.id === 'police');
+    expect(police).toBeDefined();
+    expect(police?.voiceDialogue).toContain('Officer Williams');
   });
 });

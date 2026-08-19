@@ -13,14 +13,28 @@ import { ESCALATION_LEVELS } from '../../shared/constants/escalation.constants';
 
 interface EscalationLadderProps {
   onLevel3Triggered?: () => void;
+  escalationState?: EscalationState;
+  onEscalate?: (targetLevel: EscalationLevel, reason: string) => void;
+  onReset?: () => void;
 }
 
-export const EscalationLadder: React.FC<EscalationLadderProps> = ({ onLevel3Triggered }) => {
-  const [escalation, setEscalation] = useState<EscalationState>(createInitialEscalationState());
+export const EscalationLadder: React.FC<EscalationLadderProps> = ({
+  onLevel3Triggered,
+  escalationState: externalState,
+  onEscalate: externalEscalate,
+  onReset: externalReset,
+}) => {
+  const [internalState, setInternalState] = useState<EscalationState>(createInitialEscalationState());
+
+  const escalation = externalState || internalState;
 
   const handleEscalate = (targetLevel: EscalationLevel, reason: string) => {
-    const nextState = escalateState(escalation, targetLevel, reason);
-    setEscalation(nextState);
+    if (externalEscalate) {
+      externalEscalate(targetLevel, reason);
+    } else {
+      const nextState = escalateState(internalState, targetLevel, reason);
+      setInternalState(nextState);
+    }
 
     if (targetLevel === 3 && onLevel3Triggered) {
       onLevel3Triggered();
@@ -28,7 +42,11 @@ export const EscalationLadder: React.FC<EscalationLadderProps> = ({ onLevel3Trig
   };
 
   const handleReset = () => {
-    setEscalation(resetEscalationState());
+    if (externalReset) {
+      externalReset();
+    } else {
+      setInternalState(resetEscalationState());
+    }
   };
 
   return (

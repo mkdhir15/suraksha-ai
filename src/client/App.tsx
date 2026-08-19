@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Shield, Navigation, Settings, ArrowLeft, Lock, EyeOff, Video, HeartHandshake, FileText, BarChart3, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, Navigation, Settings, ArrowLeft, Lock, EyeOff, Video, HeartHandshake, FileText, BarChart3, ChevronDown, PhoneCall } from 'lucide-react';
 import { LandingPage } from './pages/LandingPage';
 import { HomePage } from './pages/HomePage';
 import { RoutePage } from './pages/RoutePage';
 import { SettingsPage } from './pages/SettingsPage';
+import { UtilityPage } from './pages/UtilityPage';
+import { FakeCallSimulator } from './components/FakeCallSimulator';
 import { StalkerwarePage } from './pages/trust/StalkerwarePage';
 import { DeepfakeShieldPage } from './pages/trust/DeepfakeShieldPage';
 import { CrisisSupportPage } from './pages/trust/CrisisSupportPage';
@@ -17,6 +19,8 @@ export type ActiveView =
   | 'home'
   | 'route'
   | 'settings'
+  | 'utility'
+  | 'fake-call'
   | 'trust-stalkerware'
   | 'trust-deepfake'
   | 'trust-crisis'
@@ -26,6 +30,19 @@ export type ActiveView =
 export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ActiveView>('landing');
   const [trustDropdownOpen, setTrustDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#/utility') {
+        setCurrentView('utility');
+      } else if (window.location.hash === '#/fake-call') {
+        setCurrentView('fake-call');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const isTrustActive = currentView.startsWith('trust-');
 
@@ -48,7 +65,10 @@ export const App: React.FC = () => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setCurrentView('landing')}
+              onClick={() => {
+                setCurrentView('landing');
+                window.location.hash = '';
+              }}
               className="p-2 rounded-xl bg-surface border border-border hover:border-muted transition-colors text-muted hover:text-text-primary cursor-pointer"
               title="Return to Hero Landing"
             >
@@ -56,7 +76,10 @@ export const App: React.FC = () => {
             </button>
             <div
               className="flex items-center cursor-pointer"
-              onClick={() => setCurrentView('home')}
+              onClick={() => {
+                setCurrentView('home');
+                window.location.hash = '';
+              }}
             >
               <BrandMark variant="full" />
             </div>
@@ -68,6 +91,7 @@ export const App: React.FC = () => {
               onClick={() => {
                 setCurrentView('home');
                 setTrustDropdownOpen(false);
+                window.location.hash = '';
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                 currentView === 'home'
@@ -82,6 +106,7 @@ export const App: React.FC = () => {
               onClick={() => {
                 setCurrentView('route');
                 setTrustDropdownOpen(false);
+                window.location.hash = '';
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                 currentView === 'route'
@@ -90,6 +115,22 @@ export const App: React.FC = () => {
               }`}
             >
               <Navigation className="w-3.5 h-3.5" /> Safe Routes
+            </button>
+
+            {/* FAKE CALL DETERRENT TAB (Matching screenshot design) */}
+            <button
+              onClick={() => {
+                setCurrentView('fake-call');
+                setTrustDropdownOpen(false);
+                window.location.hash = '';
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                currentView === 'fake-call'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-semibold border border-indigo-400/40'
+                  : 'text-indigo-400 hover:text-indigo-300'
+              }`}
+            >
+              <PhoneCall className="w-3.5 h-3.5" /> Fake Call
             </button>
 
             {/* TRUST CENTER DROPDOWN NAV TAB */}
@@ -111,6 +152,7 @@ export const App: React.FC = () => {
                     onClick={() => {
                       setCurrentView('trust-stalkerware');
                       setTrustDropdownOpen(false);
+                      window.location.hash = '';
                     }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-left cursor-pointer transition-colors ${
                       currentView === 'trust-stalkerware' ? 'bg-accent/20 text-accent font-bold' : 'text-muted hover:bg-stage hover:text-text-primary'
@@ -123,6 +165,7 @@ export const App: React.FC = () => {
                     onClick={() => {
                       setCurrentView('trust-deepfake');
                       setTrustDropdownOpen(false);
+                      window.location.hash = '';
                     }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-left cursor-pointer transition-colors ${
                       currentView === 'trust-deepfake' ? 'bg-accent/20 text-accent font-bold' : 'text-muted hover:bg-stage hover:text-text-primary'
@@ -135,6 +178,7 @@ export const App: React.FC = () => {
                     onClick={() => {
                       setCurrentView('trust-crisis');
                       setTrustDropdownOpen(false);
+                      window.location.hash = '';
                     }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-left cursor-pointer transition-colors ${
                       currentView === 'trust-crisis' ? 'bg-accent/20 text-accent font-bold' : 'text-muted hover:bg-stage hover:text-text-primary'
@@ -147,6 +191,7 @@ export const App: React.FC = () => {
                     onClick={() => {
                       setCurrentView('trust-evidence');
                       setTrustDropdownOpen(false);
+                      window.location.hash = '';
                     }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-left cursor-pointer transition-colors ${
                       currentView === 'trust-evidence' ? 'bg-accent/20 text-accent font-bold' : 'text-muted hover:bg-stage hover:text-text-primary'
@@ -159,6 +204,7 @@ export const App: React.FC = () => {
                     onClick={() => {
                       setCurrentView('trust-fairness');
                       setTrustDropdownOpen(false);
+                      window.location.hash = '';
                     }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-left cursor-pointer transition-colors ${
                       currentView === 'trust-fairness' ? 'bg-accent/20 text-accent font-bold' : 'text-muted hover:bg-stage hover:text-text-primary'
@@ -174,6 +220,7 @@ export const App: React.FC = () => {
               onClick={() => {
                 setCurrentView('settings');
                 setTrustDropdownOpen(false);
+                window.location.hash = '';
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                 currentView === 'settings'
@@ -191,7 +238,9 @@ export const App: React.FC = () => {
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-8">
         {currentView === 'home' && <HomePage />}
         {currentView === 'route' && <RoutePage />}
+        {currentView === 'fake-call' && <FakeCallSimulator />}
         {currentView === 'settings' && <SettingsPage />}
+        {currentView === 'utility' && <UtilityPage />}
         {currentView === 'trust-stalkerware' && <StalkerwarePage />}
         {currentView === 'trust-deepfake' && <DeepfakeShieldPage />}
         {currentView === 'trust-crisis' && <CrisisSupportPage />}

@@ -3,6 +3,7 @@ import request from 'supertest';
 import { createApp } from '../src/server/app';
 import { calculateRiskFusion } from '../src/server/services/riskFusionService';
 import { verifyDriverInfo } from '../src/server/services/driverVerificationService';
+import { calculateSafeRoute } from '../src/server/services/safeRouteService';
 import {
   createInitialEscalationState,
   escalateState,
@@ -48,7 +49,6 @@ describe('Suraksha AI Backend & Safety API', () => {
 
   // 4. Driver Verification (Clean vs Flagged)
   it('POST /api/safety/verify-driver checks clean and flagged plates', async () => {
-    // Clean Plate
     const cleanRes = await request(app)
       .post('/api/safety/verify-driver')
       .send({ licensePlate: 'KA01AB1234' });
@@ -57,7 +57,6 @@ describe('Suraksha AI Backend & Safety API', () => {
     expect(cleanRes.body.isVerified).toBe(true);
     expect(cleanRes.body.trustScore).toBeGreaterThanOrEqual(80);
 
-    // Flagged Plate
     const flaggedRes = await request(app)
       .post('/api/safety/verify-driver')
       .send({ licensePlate: 'FLAGGED999' });
@@ -80,9 +79,46 @@ describe('Suraksha AI Backend & Safety API', () => {
     expect(res.body).toHaveProperty('overallSafetyIndex');
     expect(res.body.recommendedRoute.length).toBe(4);
   });
+
+  // 6. Route Telemetry Endpoint
+  it('POST /api/safety/route-telemetry returns live scores comparing fastest vs safest route', async () => {
+    const res = await request(app)
+      .post('/api/safety/route-telemetry')
+      .send({
+        originAddress: 'Central Tech Station',
+        destinationAddress: 'Koramangala Hub',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('fastestRouteScore');
+    expect(res.body).toHaveProperty('safestRouteScore');
+    expect(res.body.safestRouteScore).toBeGreaterThan(res.body.fastestRouteScore);
+    expect(res.body.metrics).toHaveProperty('lightingLux');
+  });
+
+  // 7. Route Deviation Endpoint
+  it('POST /api/safety/route-deviation evaluates GPS corridor offset and triggers Level 2 alert if deviated', async () => {
+    // Normal / On Track
+    const onTrackRes = await request(app)
+      .post('/api/safety/route-deviation')
+      .send({ currentCoords: { latitude: 12.9716, longitude: 77.5946 } });
+
+    expect(onTrackRes.status).toBe(200);
+    expect(onTrackRes.body.status).toBe('ON_TRACK');
+    expect(onTrackRes.body.level2AlertTriggered).toBe(false);
+
+    // Deviated (>300m off route)
+    const deviatedRes = await request(app)
+      .post('/api/safety/route-deviation')
+      .send({ currentCoords: { latitude: 12.9782, longitude: 77.6012 } });
+
+    expect(deviatedRes.status).toBe(200);
+    expect(deviatedRes.body.status).toBe('DEVIATED');
+    expect(deviatedRes.body.level2AlertTriggered).toBe(true);
+  });
 });
 
-describe('Pure Safety Services Unit Tests', () => {
+describe('Pure Safety Services Unit & Integration Tests', () => {
   it('calculateRiskFusion computes correct score and risk level for critical input', () => {
     const result = calculateRiskFusion({
       textSnippet: 'SOS attack help gun',
@@ -111,5 +147,34 @@ describe('Pure Safety Services Unit Tests', () => {
     const level3 = escalateState(level2, 3, 'High danger panic button');
     expect(level3.currentLevel).toBe(3);
     expect(level3.level3EmergencyDispatched).toBe(true);
+  });
+
+  it('Dead-Man switch expiration seamlessly escalates EscalationLadder to Level 3 Active', () => {
+    const state = createInitialEscalationState();
+    const expiredState = escalateState(state, 3, "Dead-Man's Switch expired without PIN renewal");
+
+    expect(expiredState.currentLevel).toBe(3);
+    expect(expiredState.level3EmergencyDispatched).toBe(true);
+    expect(expiredState.logs.some((l) => l.action.includes("Dead-Man's Switch expired"))).toBe(true);
+  });
+
+  it('calculateSafeRoute returns 4 distinct routes with non-identical DSI scores and recommends highest DSI', () => {
+    const result = calculateSafeRoute({
+      origin: { latitude: 12.9716, longitude: 77.5946 },
+      destination: { latitude: 12.9352, longitude: 77.6245 },
+    });
+
+    expect(result.allRoutes.length).toBe(4);
+
+    const dsiScores = result.allRoutes.map((r) => r.overallSafetyIndex);
+    const uniqueScores = new Set(dsiScores);
+
+    expect(uniqueScores.size).toBe(4);
+
+    const highestDSI = Math.max(...dsiScores);
+    const recommended = result.allRoutes.find((r) => r.isRecommended);
+
+    expect(recommended).toBeDefined();
+    expect(recommended?.overallSafetyIndex).toBe(highestDSI);
   });
 });

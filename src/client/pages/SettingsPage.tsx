@@ -86,6 +86,25 @@ export const SettingsPage: React.FC = () => {
           </div>
         </Card>
 
+        <Card title="Quick System Utilities">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="text-xs text-muted leading-relaxed">
+              <span className="font-semibold text-text-primary block mb-0.5">Standard Arithmetic Utility</span>
+              Standard desktop calculator utility tool for rapid calculations.
+            </div>
+            <a
+              href="#/utility"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.hash = '/utility';
+              }}
+              className="px-4 py-2 rounded-xl bg-stage border border-border text-xs font-semibold text-text-primary hover:border-accent transition-colors"
+            >
+              Open Calculator Tool
+            </a>
+          </div>
+        </Card>
+
         <div className="flex items-center gap-3">
           <Button type="submit" size="lg">
             <Save className="w-4 h-4 mr-2" /> {saved ? 'Configuration Saved!' : 'Save Settings'}

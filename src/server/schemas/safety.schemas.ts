@@ -48,3 +48,31 @@ export const CheckInSchema = z.object({
   pin: z.string().length(4, 'PIN must be exactly 4 digits'),
   switchId: z.string().optional(),
 });
+
+export const RouteTelemetrySchema = z.object({
+  originAddress: z.string().min(1, 'Origin address is required'),
+  destinationAddress: z.string().min(1, 'Destination address is required'),
+  currentCoords: z
+    .object({
+      latitude: z.number(),
+      longitude: z.number(),
+    })
+    .optional(),
+});
+
+export const RouteDeviationSchema = z.object({
+  routeId: z.string().optional(),
+  currentCoords: z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+  }),
+  expectedCorridor: z
+    .array(
+      z.object({
+        latitude: z.number(),
+        longitude: z.number(),
+      })
+    )
+    .optional(),
+  isStalled: z.boolean().optional(),
+});

@@ -73,6 +73,42 @@ export interface SafeRouteResult {
   travelTimeMinutes: number;
 }
 
+export interface RouteTelemetryInput {
+  originAddress: string;
+  destinationAddress: string;
+  currentCoords?: { latitude: number; longitude: number };
+}
+
+export interface RouteTelemetryResult {
+  fastestRouteScore: number;
+  safestRouteScore: number;
+  metrics: {
+    lightingLux: number; // 0-100
+    incidentScore: number; // 0-100
+    crowdDensity: number; // 0-100
+    policeProximityKm: number; // in km
+  };
+  recommendation: string;
+  timestamp: string;
+}
+
+export interface RouteDeviationInput {
+  routeId?: string;
+  currentCoords: { latitude: number; longitude: number };
+  expectedCorridor?: Array<{ latitude: number; longitude: number }>;
+  isStalled?: boolean;
+}
+
+export interface RouteDeviationResult {
+  deviationMeters: number;
+  deviationPercent: number;
+  status: 'ON_TRACK' | 'DEVIATED' | 'EXTENDED_STALL';
+  level2AlertTriggered: boolean;
+  alertMessage: string;
+  currentCoords: { latitude: number; longitude: number };
+  timestamp: string;
+}
+
 export interface EscortCompanion {
   id: string;
   name: string;
